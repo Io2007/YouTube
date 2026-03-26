@@ -1,10 +1,10 @@
-# 🎵 ytify-backend
+# 🎵 Muzo-backend
 
-<img src="icon.png" alt="ytify-backend" width="320" height="320" align="center">
+<img src="icon.png" alt="Muzo-backend" width="320" height="320" align="center">
 
 A powerful Node.js/Express.js API that provides access to multiple music streaming services including YouTube Music, YouTube Search, Last.fm, Saavn, Piped, and Invidious. Perfect for building music applications, playlists, and discovery features.
 
-**🌐 Backend BaseUrl:** [https://ytify-backend.vercel.app](https://ytify-backend.vercel.app)
+**🌐 Backend BaseUrl:** [https://Muzo-backend.vercel.app](https://Muzo-backend.vercel.app)
 
 ![API Status](https://img.shields.io/badge/API-Online-green)
 ![Node.js](https://img.shields.io/badge/Node.js-20.x-brightgreen)
@@ -29,8 +29,8 @@ A powerful Node.js/Express.js API that provides access to multiple music streami
 
 ```bash
 # Clone the repository
-git clone https://github.com/Shashwat-CODING/ytify-backend.git
-cd ytify-backend
+git clone https://github.com/Shashwat-CODING/Muzo-backend.git
+cd Muzo-backend
 
 # Install dependencies
 npm install
@@ -44,7 +44,7 @@ The API will be available at `http://localhost:5000`
 ### 🌐 Frontend Demo
 
 Experience the API in action with our live frontend demo:
-- **Live Demo:** [https://ytify-backend.vercel.app](https://ytify-backend.vercel.app)
+- **Live Demo:** [https://Muzo-backend.vercel.app](https://Muzo-backend.vercel.app)
 - **Features:** Interactive API testing, real-time search, and streaming capabilities
 - **Source:** Built with modern web technologies showcasing all API endpoints
 
@@ -330,7 +330,7 @@ The API automatically fetches and caches streaming instances from remote sources
 
 ### Project Structure
 ```
-ytify-backend/
+Muzo-backend/
 ├── js/                      # Main project directory
 │   ├── app.js              # Main Express application
 │   ├── api/
@@ -413,15 +413,15 @@ MIT License - see LICENSE file for details.
 ## 🆘 Support
 
 For issues and questions:
-1. Check the existing issues on [GitHub](https://github.com/Shashwat-CODING/ytify-backend/issues)
+1. Check the existing issues on [GitHub](https://github.com/Shashwat-CODING/Muzo-backend/issues)
 2. Create a new issue with detailed description
 3. Include logs and request/response examples
-4. Visit our [live demo](https://shashwat-coding.github.io/ytify-backend) to test the API
+4. Visit our [live demo](https://shashwat-coding.github.io/Muzo-backend) to test the API
 
 ## 🔗 Links
 
-- **GitHub Repository:** [https://github.com/Shashwat-CODING/ytify-backend](https://github.com/Shashwat-CODING/ytify-backend)
-- **Live Demo:** [https://shashwat-coding.github.io/ytify-backend](https://shashwat-coding.github.io/ytify-backend)
+- **GitHub Repository:** [https://github.com/Shashwat-CODING/Muzo-backend](https://github.com/Shashwat-CODING/Muzo-backend)
+- **Live Demo:** [https://shashwat-coding.github.io/Muzo-backend](https://shashwat-coding.github.io/Muzo-backend)
 - **API Documentation:** Available in this README and through the live demo
 
 ## 🔄 Changelog
@@ -441,4 +441,4 @@ For issues and questions:
 
 ---
 
-**Made with ❤️ by Shashwat for the ytify community**
+**Made with ❤️ by Shashwat for the Muzo community**
