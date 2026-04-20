@@ -64,49 +64,87 @@ router.get('/search', async (req, res) => {
         if (item.title?.text) {
           title = item.title.text;
         } else if (item.flex_columns && Array.isArray(item.flex_columns)) {
-          title = item.flex_columns[0]?.text?.runs?.map(r => r.text).join('') || '';
+          // Try col.title.runs first (new structure), then col.text.runs (old structure)
+          const firstCol = item.flex_columns[0];
+          if (firstCol?.title?.runs && Array.isArray(firstCol.title.runs)) {
+            title = firstCol.title.runs.map(r => r.text).join('');
+          } else if (firstCol?.text?.runs && Array.isArray(firstCol.text.runs)) {
+            title = firstCol.text.runs.map(r => r.text).join('');
+          } else if (firstCol?.title?.text) {
+            title = firstCol.title.text;
+          } else if (firstCol?.text) {
+            title = firstCol.text;
+          }
         }
         
         // Extract thumbnail
         const thumbnail = item.thumbnail?.url || item.thumbnails?.[0]?.url || '';
         
+        // Get the ID - use item.id directly as the primary source
+        const id = item.id || '';
+        
+        // Determine type based on ID prefix and item properties
+        // Video IDs are typically 11 characters (base64-like)
+        // Album IDs start with MPREb_
+        // Playlist IDs start with VLPL or RDCLAK5uy
+        // Artist IDs start with UC or are channel IDs
+        const isAlbum = id.startsWith('MPREb_');
+        const isPlaylist = id.startsWith('VLPL') || id.startsWith('RDCLAK5uy');
+        const isArtist = id.startsWith('UC') || id.startsWith('MPCG');
+        const isSong = !isAlbum && !isPlaylist && !isArtist && id.length >= 10;
+
         // Check for Song/Video types
-        if (item.type === 'Song' || item.type === 'Video' || item.type === 'MusicResponsiveListItem') {
-          // Try to get videoId from endpoint
-          let videoId = '';
-          if (item.endpoint?.watchEndpoint?.videoId) {
-            videoId = item.endpoint.watchEndpoint.videoId;
-          } else if (item.videoId) {
-            videoId = item.videoId;
-          } else if (item.id) {
-            videoId = item.id;
-          }
-          
+        if (isSong) {
           // Extract duration
           let durationText = '';
           if (item.duration?.text) {
             durationText = item.duration.text;
           } else if (item.fixed_columns && Array.isArray(item.fixed_columns)) {
-            durationText = item.fixed_columns[0]?.text?.simpleText || '';
+            const fixedCol = item.fixed_columns[0];
+            if (fixedCol?.text?.simpleText) {
+              durationText = fixedCol.text.simpleText;
+            } else if (fixedCol?.title?.text) {
+              durationText = fixedCol.title.text;
+            } else if (fixedCol?.title?.runs && Array.isArray(fixedCol.title.runs)) {
+              durationText = fixedCol.title.runs.map(r => r.text).join('');
+            }
           }
           const durationSeconds = parseDuration(durationText);
-          
+
           // Extract artist from flex_columns[1]
           let artist = '';
           if (item.flex_columns && item.flex_columns.length > 1) {
-            artist = item.flex_columns[1]?.text?.runs?.map(r => r.text).join(', ') || '';
+            const secondCol = item.flex_columns[1];
+            if (secondCol?.title?.runs && Array.isArray(secondCol.title.runs)) {
+              artist = secondCol.title.runs.map(r => r.text).join(', ');
+            } else if (secondCol?.text?.runs && Array.isArray(secondCol.text.runs)) {
+              artist = secondCol.text.runs.map(r => r.text).join(', ');
+            } else if (secondCol?.title?.text) {
+              artist = secondCol.title.text;
+            } else if (secondCol?.text) {
+              artist = secondCol.text;
+            }
           } else if (item.artists && Array.isArray(item.artists)) {
             artist = item.artists.map(a => a.name).join(', ');
           }
-          
+
           // Extract album
           let album = '';
           if (item.album?.name) {
             album = item.album.name;
           } else if (item.flex_columns && item.flex_columns.length > 2) {
-            album = item.flex_columns[2]?.text?.runs?.map(r => r.text).join(', ') || '';
+            const thirdCol = item.flex_columns[2];
+            if (thirdCol?.title?.runs && Array.isArray(thirdCol.title.runs)) {
+              album = thirdCol.title.runs.map(r => r.text).join(', ');
+            } else if (thirdCol?.text?.runs && Array.isArray(thirdCol.text.runs)) {
+              album = thirdCol.text.runs.map(r => r.text).join(', ');
+            } else if (thirdCol?.title?.text) {
+              album = thirdCol.title.text;
+            } else if (thirdCol?.text) {
+              album = thirdCol.text;
+            }
           }
-          
+
           // Extract ISRC if available
           let isrc = '';
           if (item.isrc) {
@@ -114,12 +152,12 @@ router.get('/search', async (req, res) => {
           } else if (item.videoDetails?.isrc) {
             isrc = item.videoDetails.isrc;
           }
-          
-          // Only add if we have at least a videoId and title
-          if (videoId && title) {
+
+          // Only add if we have at least an id and title
+          if (id && title) {
             const trackObj = {
-              id: videoId,
-              videoId: videoId,
+              id: id,
+              videoId: id,
               title: title,
               artist: artist,
               album: album,
@@ -134,13 +172,32 @@ router.get('/search', async (req, res) => {
           }
         }
         // Check for Album type
-        else if (item.type === 'Album') {
-          const browseId = item.browseId || item.id || '';
-          if (browseId && title) {
+        else if (isAlbum) {
+          // Extract artist from flex_columns[1]
+          let albumArtist = '';
+          if (item.flex_columns && item.flex_columns.length > 1) {
+            const secondCol = item.flex_columns[1];
+            if (secondCol?.title?.runs && Array.isArray(secondCol.title.runs)) {
+              // Parse "Album • Artist • Year" format to extract just the artist
+              const fullText = secondCol.title.runs.map(r => r.text).join('');
+              const parts = fullText.split(' • ');
+              if (parts.length >= 2) {
+                albumArtist = parts[1]; // Second part is usually the artist
+              }
+            } else if (secondCol?.text?.runs && Array.isArray(secondCol.text.runs)) {
+              const fullText = secondCol.text.runs.map(r => r.text).join('');
+              const parts = fullText.split(' • ');
+              if (parts.length >= 2) {
+                albumArtist = parts[1];
+              }
+            }
+          }
+          
+          if (id && title) {
             albums.push({
-              id: browseId,
+              id: id,
               title: title,
-              artist: Array.isArray(item.artists) ? item.artists.map(a => a.name).join(', ') : '',
+              artist: albumArtist || (Array.isArray(item.artists) ? item.artists.map(a => a.name).join(', ') : ''),
               artworkURL: thumbnail,
               trackCount: 0,
               year: ''
@@ -148,11 +205,10 @@ router.get('/search', async (req, res) => {
           }
         }
         // Check for Artist type
-        else if (item.type === 'Artist') {
-          const browseId = item.browseId || item.id || '';
-          if (browseId && title) {
+        else if (isArtist) {
+          if (id && title) {
             artists.push({
-              id: browseId,
+              id: id,
               name: title,
               artworkURL: thumbnail,
               genres: []
@@ -160,11 +216,10 @@ router.get('/search', async (req, res) => {
           }
         }
         // Check for Playlist type
-        else if (item.type === 'Playlist') {
-          const browseId = item.browseId || item.id || '';
-          if (browseId && title) {
+        else if (isPlaylist) {
+          if (id && title) {
             playlists.push({
-              id: browseId,
+              id: id,
               title: title,
               creator: item.author?.name || '',
               artworkURL: thumbnail,
