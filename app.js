@@ -1,14 +1,15 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // Import route modules
-const apiRoutes = require('./routes/api');
+import apiRoutes from './routes/api.js';
 
-// Import libraries
-const { Innertube } = require('youtubei.js');
+// Import libraries - will be dynamically imported in routes to handle ESM
+// const { Innertube } = require('youtubei.js'); // Removed static import
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -33,6 +34,8 @@ let youtubeMusic = null;
 
 async function initYouTubeMusic() {
   try {
+    // Dynamic import for ESM module
+    const { Innertube } = await import('youtubei.js');
     const yt = await Innertube.create();
     youtubeMusic = yt;
     app.locals.youtubeMusic = yt;
@@ -105,4 +108,4 @@ if (!process.env.VERCEL) {
   });
 }
 
-module.exports = app;
+export default app;

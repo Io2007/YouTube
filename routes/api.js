@@ -1,5 +1,4 @@
-const express = require('express');
-const { Innertube } = require('youtubei.js');
+import express from 'express';
 
 const router = express.Router();
 
@@ -363,4 +362,4 @@ router.get('/stream/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
