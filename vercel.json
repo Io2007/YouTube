@@ -3,10 +3,11 @@
   "builds": [
     {
       "src": "app.js",
-      "use": "@vercel/node",
-      "config": {
-        "maxDuration": 60
-      }
+      "use": "@vercel/node"
+    },
+    {
+      "src": "routes/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -14,8 +15,5 @@
       "src": "/(.*)",
       "dest": "app.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
