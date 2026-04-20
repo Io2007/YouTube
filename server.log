@@ -1,8 +1,12 @@
+
+> youtube-music-api@1.0.0 start
+> node app.js
+
 🚀 YouTube Music API server running on port 8000
-📍 Search endpoint: http://localhost:8000/api/search
-🎵 Stream endpoint: http://localhost:8000/api/stream/:id
-[YOUTUBEJS][Player]: Failed to extract signature decipher function.
-[YOUTUBEJS][Player]: Failed to extract n decipher function.
-[YouTube Music] Client initialized successfully
-127.0.0.1 - - [20/Apr/2026:15:20:52 +0000] "GET /api/search?q=Bohemian%20Rhapsody HTTP/1.1" 200 53 "-" "curl/7.88.1"
-127.0.0.1 - - [20/Apr/2026:15:20:58 +0000] "GET /api/search?q=Bohemian%20Rhapsody HTTP/1.1" 200 53 "-" "curl/7.88.1"
+📍 Search endpoint: http://localhost:8000/search
+🎵 Stream endpoint: http://localhost:8000/stream/:id
+💿 Album endpoint: http://localhost:8000/album/:id
+👤 Artist endpoint: http://localhost:8000/artist/:id
+📋 Playlist endpoint: http://localhost:8000/playlist/:id
+[YouTube Music] Client initialized successfully (attempt 1)
+127.0.0.1 - - [20/Apr/2026:20:07:20 +0000] "GET /search?q=bruno%20mars HTTP/1.1" 200 8549 "-" "curl/7.88.1"
