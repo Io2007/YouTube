@@ -373,25 +373,69 @@ For issues and questions:
 - **Live Demo:** [https://shashwat-coding.github.io/Muzo-backend](https://shashwat-coding.github.io/Muzo-backend)
 - **Eclipse Music:** [Download Eclipse](https://eclipse-music.app)
 
+## 📋 Capabilities Reference
+
+### Resources
+
+| Value | Description |
+|-------|-------------|
+| `"search"` | Your addon can search for music (shows in search dropdown) |
+| `"stream"` | Your addon can resolve playable URLs (shows in playback picker) |
+| `"catalog"` | Your addon supports detail endpoints (`/album/{id}`, `/artist/{id}`, `/playlist/{id}`) |
+
+### Types
+
+| Value | Description |
+|-------|-------------|
+| `"track"` | Individual songs |
+| `"album"` | Albums/collections |
+| `"artist"` | Artists |
+| `"playlist"` | Curated playlists |
+| `"file"` | Generic audio files |
+
 ## 📋 FAQ
 
 **Can I build an addon in any language?**  
-Yes — any language that can serve HTTP with JSON responses works.
+Yes — any language that can serve HTTP with JSON responses works. Node.js, Python, Go, Rust, PHP, Ruby, Java, C#, etc.
 
 **Does my addon need a database?**  
-No — your addon just needs to respond to HTTP requests.
+No — your addon just needs to respond to HTTP requests. How you source the data is up to you.
 
 **Can my addon require authentication?**  
-Yes — include tokens in your addon URL. Eclipse stores the full URL.
+Yes — you can include tokens in your addon URL (e.g. `https://my-addon.com/{user_token}/manifest.json`). Eclipse stores the full URL.
 
 **What happens if my addon is offline?**  
-Eclipse falls back gracefully — tracks won't play, but the app works fine.
+Eclipse falls back gracefully — tracks from your addon won't play, but the rest of the app works fine. Downloaded/offline tracks still play from local files.
 
 **Can I update my addon without users reinstalling?**  
-Yes — just update your server. Eclipse fetches the manifest each time.
+Yes — just update your server. Eclipse fetches the manifest each time. Users don't need to reinstall unless the URL changes.
+
+**What audio formats are supported?**  
+MP3, AAC, M4A, FLAC, WAV, OGG. FLAC streams instantly via Eclipse's native FLAC streaming engine.
+
+**Can my addon provide album/artist detail pages?**  
+Yes! Implement GET `/album/{id}` and GET `/artist/{id}` endpoints, and add `"catalog"` to your manifest's resources array. When users tap an album or artist from your search results, Eclipse will load the details from your addon. Without these endpoints, Eclipse falls back to Apple Music (MusicKit) for album/artist browsing — which won't work for content not on Apple Music (unreleased music, remixes, etc.).
+
+**How do I group content into albums/eras?**  
+Return them as albums in your `/search` response, then implement `/album/{id}` to return the tracks for each group. For example, an unreleased music addon could group songs by "era" and return each era as an album.
 
 **Can users save addon tracks offline?**  
-Yes — tracks with streamURL can be downloaded for offline listening.
+Yes — tracks with a streamURL (direct URL) can be downloaded for offline listening. Users can save individual tracks or bulk-download entire playlists. Offline playback works without your addon server.
+
+**Can my addon be set as the default playback source?**  
+Yes — if your manifest includes `"stream"` in resources, your addon appears in Settings → Addon Management → Default Playback. When selected, Eclipse searches your addon for songs played from Home, Radio, DJ, editorial playlists, etc. Return the best match from your search endpoint.
+
+**What if my addon uses token-based URLs?**  
+Include the token in your base URL: `https://my-addon.com/{user_token}/manifest.json`. Eclipse strips `/manifest.json` and uses the rest as the base URL. All subsequent calls (`/search`, `/stream`, `/album`, etc.) include the token prefix automatically.
+
+**Can I return year as a number instead of a string?**  
+Yes — Eclipse accepts `"year": 2024` (number) or `"year": "2024"` (string) for albums. Both work.
+
+**Do I need to return all search result types?**  
+No. Return only what you have. A podcast addon might return only tracks. A music library addon might return tracks, albums, and artists. Eclipse handles missing arrays gracefully.
+
+**Can users import playlists through my addon?**  
+Yes — your addon appears as a match service in the Import Playlist flow. When importing a Spotify or Apple Music playlist, Eclipse searches your addon for each track and creates a local playlist with matches.
 
 ---
 
