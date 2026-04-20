@@ -7,7 +7,7 @@ const router = express.Router();
  * @swagger
  * /api/search:
  *   get:
- *     summary: Search YouTube Music
+ *     summary: Search YouTube Music (Eclipse Addon format)
  *     parameters:
  *       - in: query
  *         name: q
@@ -15,21 +15,13 @@ const router = express.Router();
  *         schema:
  *           type: string
  *         description: Search query string
- *       - in: query
- *         name: filter
- *         schema:
- *           type: string
- *           enum: [songs, videos, albums, artists, playlists]
- *         description: Restrict results to a specific type
  *     responses:
  *       200:
- *         description: Search results
- *       400:
- *         description: Missing/invalid params
+ *         description: Search results in Eclipse Addon format
  */
 router.get('/search', async (req, res) => {
   try {
-    const { q: query, filter } = req.query;
+    const { q: query } = req.query;
 
     if (!query) {
       return res.status(400).json({ error: "Missing required query parameter 'q'" });
@@ -41,52 +33,137 @@ router.get('/search', async (req, res) => {
       return res.status(503).json({ error: 'YouTube Music client not initialized' });
     }
 
-    // Perform search using youtubei.js
-    const searchResults = await youtubeMusic.music.search(query, filter || undefined);
+    // Perform search using youtubei.js for Music
+    const searchResults = await youtubeMusic.music.search(query);
 
-    // Normalize results
-    const results = [];
+    // Initialize result arrays
+    const tracks = [];
+    const albums = [];
+    const artists = [];
+    const playlists = [];
     
-    if (searchResults.contents) {
-      for (const content of searchResults.contents) {
-        if (content.type === 'MusicResponsiveListItem') {
-          results.push({
-            id: content.id?.replace('MPREb_', '') || content.videoId || '',
-            videoId: content.videoId || '',
-            title: content.title?.text || content.title?.runs?.map(r => r.text).join('') || '',
-            artist: content.artists?.map(a => a.name).join(', ') || '',
-            album: content.album?.name || '',
-            duration: content.duration?.text || '',
-            thumbnail: content.thumbnails?.[0]?.url || '',
-            type: content.type
-          });
-        } else if (content.type === 'Song' || content.type === 'Video') {
-          results.push({
-            id: content.id || content.videoId || '',
-            videoId: content.videoId || content.id || '',
-            title: content.title?.text || content.title || '',
-            artist: content.artists?.map(a => a.name).join(', ') || '',
-            album: content.album?.name || '',
-            duration: content.duration?.text || content.duration || '',
-            thumbnail: content.thumbnails?.[0]?.url || '',
-            type: content.type
-          });
-        } else if (content.type === 'Album' || content.type === 'Playlist' || content.type === 'Artist') {
-          results.push({
-            id: content.browseId || content.id || '',
-            title: content.title?.text || content.title || '',
-            artist: content.artists?.map(a => a.name).join(', ') || '',
-            thumbnail: content.thumbnails?.[0]?.url || '',
-            type: content.type
-          });
+    // Handle different response structures from youtubei.js
+    let contents = [];
+    if (searchResults.contents && Array.isArray(searchResults.contents)) {
+      contents = searchResults.contents;
+    }
+    
+    // Iterate through sections
+    for (const section of contents) {
+      if (!section || !section.contents || !Array.isArray(section.contents)) continue;
+      
+      for (const item of section.contents) {
+        if (!item) continue;
+        
+        // Extract title from flex_columns or title property
+        let title = '';
+        if (item.title?.text) {
+          title = item.title.text;
+        } else if (item.flex_columns && Array.isArray(item.flex_columns)) {
+          title = item.flex_columns[0]?.text?.runs?.map(r => r.text).join('') || '';
+        }
+        
+        // Extract thumbnail
+        const thumbnail = item.thumbnail?.url || item.thumbnails?.[0]?.url || '';
+        
+        // Check for Song/Video types
+        if (item.type === 'Song' || item.type === 'Video' || item.type === 'MusicResponsiveListItem') {
+          // Try to get videoId from endpoint
+          let videoId = '';
+          if (item.endpoint?.watchEndpoint?.videoId) {
+            videoId = item.endpoint.watchEndpoint.videoId;
+          } else if (item.videoId) {
+            videoId = item.videoId;
+          } else if (item.id) {
+            videoId = item.id;
+          }
+          
+          // Extract duration
+          let durationText = '';
+          if (item.duration?.text) {
+            durationText = item.duration.text;
+          } else if (item.fixed_columns && Array.isArray(item.fixed_columns)) {
+            durationText = item.fixed_columns[0]?.text?.simpleText || '';
+          }
+          const durationSeconds = parseDuration(durationText);
+          
+          // Extract artist from flex_columns[1]
+          let artist = '';
+          if (item.flex_columns && item.flex_columns.length > 1) {
+            artist = item.flex_columns[1]?.text?.runs?.map(r => r.text).join(', ') || '';
+          } else if (item.artists && Array.isArray(item.artists)) {
+            artist = item.artists.map(a => a.name).join(', ');
+          }
+          
+          // Extract album
+          let album = '';
+          if (item.album?.name) {
+            album = item.album.name;
+          } else if (item.flex_columns && item.flex_columns.length > 2) {
+            album = item.flex_columns[2]?.text?.runs?.map(r => r.text).join(', ') || '';
+          }
+          
+          // Only add if we have at least a videoId and title
+          if (videoId && title) {
+            tracks.push({
+              id: videoId,
+              videoId: videoId,
+              title: title,
+              artist: artist,
+              album: album,
+              duration: durationSeconds,
+              artworkURL: thumbnail,
+              format: 'mp3'
+            });
+          }
+        }
+        // Check for Album type
+        else if (item.type === 'Album') {
+          const browseId = item.browseId || item.id || '';
+          if (browseId && title) {
+            albums.push({
+              id: browseId,
+              title: title,
+              artist: Array.isArray(item.artists) ? item.artists.map(a => a.name).join(', ') : '',
+              artworkURL: thumbnail,
+              trackCount: 0,
+              year: ''
+            });
+          }
+        }
+        // Check for Artist type
+        else if (item.type === 'Artist') {
+          const browseId = item.browseId || item.id || '';
+          if (browseId && title) {
+            artists.push({
+              id: browseId,
+              name: title,
+              artworkURL: thumbnail,
+              genres: []
+            });
+          }
+        }
+        // Check for Playlist type
+        else if (item.type === 'Playlist') {
+          const browseId = item.browseId || item.id || '';
+          if (browseId && title) {
+            playlists.push({
+              id: browseId,
+              title: title,
+              creator: item.author?.name || '',
+              artworkURL: thumbnail,
+              trackCount: 0
+            });
+          }
         }
       }
     }
 
     res.json({
-      query,
-      filter: filter || null,
-      results
+      tracks,
+      albums,
+      artists,
+      playlists
     });
   } catch (error) {
     console.error('Search error:', error);
@@ -95,10 +172,25 @@ router.get('/search', async (req, res) => {
 });
 
 /**
+ * Parse duration string to seconds
+ */
+function parseDuration(durationText) {
+  if (!durationText) return 0;
+  
+  const parts = durationText.split(':').map(p => parseInt(p, 10));
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return 0;
+}
+
+/**
  * @swagger
  * /api/stream/:id:
  *   get:
- *     summary: Get streaming data for a video using Piped/Invidious
+ *     summary: Get streaming data for a video using Piped/Invidious (Eclipse Addon format)
  *     parameters:
  *       - in: path
  *         name: id
@@ -108,18 +200,13 @@ router.get('/search', async (req, res) => {
  *         description: Video ID
  *     responses:
  *       200:
- *         description: Streaming data with formats
- *       400:
- *         description: Missing/invalid params
- *       404:
- *         description: Stream not found
+ *         description: Stream URL in Eclipse Addon format
  */
 router.get('/stream/:id', async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
     return res.status(400).json({
-      success: false,
       error: 'Missing required parameter: id is required'
     });
   }
@@ -220,14 +307,12 @@ router.get('/stream/:id', async (req, res) => {
           
           audioFormats.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
 
+          // Return highest quality audio URL
+          const bestFormat = audioFormats[0];
           return res.json({
-            success: true,
-            videoId: id,
-            title: invidiousData.title || '',
-            author: invidiousData.author || '',
-            duration: invidiousData.lengthSeconds || 0,
-            thumbnails: invidiousData.videoThumbnails ? invidiousData.videoThumbnails.map(t => ({ url: t.url })) : [],
-            formats: audioFormats
+            url: bestFormat ? bestFormat.url : '',
+            format: bestFormat ? bestFormat.mimeType.replace('audio/', '') : 'mp3',
+            quality: bestFormat ? `${Math.round(bestFormat.bitrate / 1000)}kbps` : 'medium'
           });
         } catch (error) {
           lastError = error;
@@ -239,7 +324,6 @@ router.get('/stream/:id', async (req, res) => {
 
     if (!streamData) {
       return res.status(500).json({
-        success: false,
         error: 'All Piped and Invidious instances failed',
         message: lastError?.message || 'Unknown error'
       });
@@ -263,19 +347,16 @@ router.get('/stream/:id', async (req, res) => {
     // Sort formats by bitrate (highest first)
     audioFormats.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0));
 
+    // Return highest quality audio URL
+    const bestFormat = audioFormats[0];
     res.json({
-      success: true,
-      videoId: id,
-      title: streamData.title || '',
-      author: streamData.uploader || '',
-      duration: streamData.duration || 0,
-      thumbnails: streamData.thumbnailUrl ? [{ url: streamData.thumbnailUrl }] : [],
-      formats: audioFormats
+      url: bestFormat ? bestFormat.url : '',
+      format: bestFormat ? bestFormat.mimeType.replace('audio/', '') : 'mp3',
+      quality: bestFormat ? `${Math.round(bestFormat.bitrate / 1000)}kbps` : 'medium'
     });
   } catch (error) {
     console.error('Stream endpoint error:', error);
     res.status(500).json({
-      success: false,
       error: 'Internal server error',
       message: error.message
     });
