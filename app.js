@@ -33,7 +33,9 @@ let youtubeMusic = null;
 
 async function initYouTubeMusic() {
   try {
-    youtubeMusic = await Innertube.create();
+    const yt = await Innertube.create();
+    youtubeMusic = yt;
+    app.locals.youtubeMusic = yt;
     console.log('[YouTube Music] Client initialized successfully');
   } catch (error) {
     console.error('[YouTube Music] Initialization failed:', error);
@@ -42,8 +44,19 @@ async function initYouTubeMusic() {
 
 initYouTubeMusic();
 
-// Make client available to routes
-app.locals.youtubeMusic = youtubeMusic;
+// Manifest endpoint for Eclipse Music Addon
+app.get('/manifest.json', (req, res) => {
+  res.json({
+    id: 'com.youtubemusic.addon',
+    name: 'YouTube Music Addon',
+    version: '1.0.0',
+    description: 'Search and stream music from YouTube Music using Piped/Invidious',
+    icon: 'https://www.youtube.com/s/desktop/img/favicon_144x144.png',
+    resources: ['search', 'stream', 'catalog'],
+    types: ['track', 'album', 'artist', 'playlist'],
+    contentType: 'music'
+  });
+});
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -51,6 +64,7 @@ app.get('/', (req, res) => {
     name: 'YouTube Music API',
     description: 'Search and stream music from YouTube Music',
     endpoints: {
+      manifest: '/manifest.json',
       search: '/api/search',
       stream: '/api/stream/:id'
     }
