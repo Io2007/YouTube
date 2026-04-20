@@ -31,21 +31,58 @@ app.use(express.urlencoded({ extended: true }));
 
 // Initialize YouTube Music client
 let youtubeMusic = null;
+let initializationAttempts = 0;
+const MAX_INIT_ATTEMPTS = 3;
+const INIT_RETRY_DELAY = 2000; // 2 seconds
 
 async function initYouTubeMusic() {
+  initializationAttempts++;
   try {
     // Dynamic import for ESM module
     const { Innertube } = await import('youtubei.js');
-    const yt = await Innertube.create();
+    
+    // Create with custom fetch options for better serverless compatibility
+    const yt = await Innertube.create({
+      fetch: globalThis.fetch,
+      retrieve_player: false,  // Disable player retrieval to avoid signature decipher issues
+      cookie: undefined,
+      po_token: undefined,
+      visitor_data: undefined,
+      generate_session_locally: true
+    });
+    
     youtubeMusic = yt;
     app.locals.youtubeMusic = yt;
-    console.log('[YouTube Music] Client initialized successfully');
+    console.log('[YouTube Music] Client initialized successfully (attempt ' + initializationAttempts + ')');
   } catch (error) {
-    console.error('[YouTube Music] Initialization failed:', error);
+    console.error('[YouTube Music] Initialization failed (attempt ' + initializationAttempts + '):', error.message);
+    
+    // Retry if we haven't exceeded max attempts
+    if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+      console.log('[YouTube Music] Retrying initialization in ' + (INIT_RETRY_DELAY/1000) + 's...');
+      setTimeout(initYouTubeMusic, INIT_RETRY_DELAY);
+    } else {
+      console.error('[YouTube Music] Max initialization attempts reached. Will retry on next request.');
+    }
   }
 }
 
+// Start initialization
 initYouTubeMusic();
+
+// Helper to ensure YouTube Music is initialized before handling requests
+async function ensureYouTubeMusicInitialized() {
+  if (youtubeMusic) {
+    return youtubeMusic;
+  }
+  
+  // Try to initialize on-demand if not already initialized
+  if (initializationAttempts < MAX_INIT_ATTEMPTS) {
+    await initYouTubeMusic();
+  }
+  
+  return youtubeMusic;
+}
 
 // Manifest endpoint for Eclipse Music Addon
 app.get('/manifest.json', (req, res) => {
@@ -121,5 +158,8 @@ if (!process.env.VERCEL) {
     console.log(`📋 Playlist endpoint: http://localhost:${PORT}/playlist/:id`);
   });
 }
+
+// Export helper function for use in routes
+export { ensureYouTubeMusicInitialized };
 
 export default app;

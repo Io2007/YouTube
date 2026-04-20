@@ -1,4 +1,5 @@
 import express from 'express';
+import { ensureYouTubeMusicInitialized } from '../app.js';
 
 const router = express.Router();
 
@@ -26,10 +27,14 @@ router.get('/search', async (req, res) => {
       return res.status(400).json({ error: "Missing required query parameter 'q'" });
     }
 
-    const youtubeMusic = req.app.locals.youtubeMusic;
+    // Ensure YouTube Music client is initialized
+    const youtubeMusic = await ensureYouTubeMusicInitialized();
 
     if (!youtubeMusic) {
-      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+      return res.status(503).json({ 
+        error: 'YouTube Music client not initialized',
+        message: 'Failed to initialize YouTube Music client. Please try again.'
+      });
     }
 
     // Perform search using youtubei.js for Music
@@ -221,10 +226,14 @@ router.get('/album/:id', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: id' });
     }
 
-    const youtubeMusic = req.app.locals.youtubeMusic;
+    // Ensure YouTube Music client is initialized
+    const youtubeMusic = await ensureYouTubeMusicInitialized();
 
     if (!youtubeMusic) {
-      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+      return res.status(503).json({ 
+        error: 'YouTube Music client not initialized',
+        message: 'Failed to initialize YouTube Music client. Please try again.'
+      });
     }
 
     // Get album details using youtubei.js
@@ -317,10 +326,14 @@ router.get('/artist/:id', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: id' });
     }
 
-    const youtubeMusic = req.app.locals.youtubeMusic;
+    // Ensure YouTube Music client is initialized
+    const youtubeMusic = await ensureYouTubeMusicInitialized();
 
     if (!youtubeMusic) {
-      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+      return res.status(503).json({ 
+        error: 'YouTube Music client not initialized',
+        message: 'Failed to initialize YouTube Music client. Please try again.'
+      });
     }
 
     // Get artist details using youtubei.js
@@ -418,10 +431,14 @@ router.get('/playlist/:id', async (req, res) => {
       return res.status(400).json({ error: 'Missing required parameter: id' });
     }
 
-    const youtubeMusic = req.app.locals.youtubeMusic;
+    // Ensure YouTube Music client is initialized
+    const youtubeMusic = await ensureYouTubeMusicInitialized();
 
     if (!youtubeMusic) {
-      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+      return res.status(503).json({ 
+        error: 'YouTube Music client not initialized',
+        message: 'Failed to initialize YouTube Music client. Please try again.'
+      });
     }
 
     // Get playlist details using youtubei.js
