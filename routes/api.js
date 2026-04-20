@@ -157,7 +157,6 @@ router.get('/search', async (req, res) => {
           if (id && title) {
             const trackObj = {
               id: id,
-              videoId: id,
               title: title,
               artist: artist,
               album: album,
@@ -325,7 +324,6 @@ router.get('/album/:id', async (req, res) => {
         if (videoId && trackTitle) {
           const trackObj = {
             id: videoId,
-            videoId: videoId,
             title: trackTitle,
             artist: track.artists?.map(a => a.name).join(', ') || artist,
             album: title,
@@ -416,7 +414,6 @@ router.get('/artist/:id', async (req, res) => {
         if (videoId && title) {
           topSongs.push({
             id: videoId,
-            videoId: videoId,
             title: title,
             artist: name,
             duration: durationSeconds,
