@@ -49,6 +49,7 @@ initYouTubeMusic();
 
 // Manifest endpoint for Eclipse Music Addon
 app.get('/manifest.json', (req, res) => {
+  const baseUrl = req.protocol + '://' + req.get('host');
   res.json({
     id: 'com.youtubemusic.addon',
     name: 'YouTube Music Addon',
@@ -57,20 +58,30 @@ app.get('/manifest.json', (req, res) => {
     icon: 'https://www.youtube.com/s/desktop/img/favicon_144x144.png',
     resources: ['search', 'stream', 'catalog'],
     types: ['track', 'album', 'artist', 'playlist'],
-    contentType: 'music'
+    contentType: 'music',
+    // Base URL for catalog endpoints (Eclipse will use this to construct URLs)
+    baseUrl: baseUrl
   });
 });
 
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
-    name: 'YouTube Music API',
-    description: 'Search and stream music from YouTube Music',
+    name: 'YouTube Music API - Eclipse Addon',
+    description: 'Search and stream music from YouTube Music with full Eclipse Music Addon support',
+    version: '1.0.0',
+    eclipseAddon: true,
     endpoints: {
       manifest: '/manifest.json',
-      search: '/api/search',
-      stream: '/api/stream/:id'
-    }
+      search: '/search?q={query}',
+      stream: '/stream/{id}',
+      album: '/album/{id}',
+      artist: '/artist/{id}',
+      playlist: '/playlist/{id}',
+      health: '/health'
+    },
+    resources: ['search', 'stream', 'catalog'],
+    types: ['track', 'album', 'artist', 'playlist']
   });
 });
 
@@ -79,8 +90,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// API routes - only search and stream
-app.use('/api', apiRoutes);
+// API routes - search, stream, and catalog endpoints (no prefix for Eclipse addon compatibility)
+app.use('/', apiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -103,8 +114,11 @@ app.use('*', (req, res) => {
 if (!process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 YouTube Music API server running on port ${PORT}`);
-    console.log(`📍 Search endpoint: http://localhost:${PORT}/api/search`);
-    console.log(`🎵 Stream endpoint: http://localhost:${PORT}/api/stream/:id`);
+    console.log(`📍 Search endpoint: http://localhost:${PORT}/search`);
+    console.log(`🎵 Stream endpoint: http://localhost:${PORT}/stream/:id`);
+    console.log(`💿 Album endpoint: http://localhost:${PORT}/album/:id`);
+    console.log(`👤 Artist endpoint: http://localhost:${PORT}/artist/:id`);
+    console.log(`📋 Playlist endpoint: http://localhost:${PORT}/playlist/:id`);
   });
 }
 
