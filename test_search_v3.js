@@ -5,7 +5,7 @@ import { Innertube } from 'youtubei.js';
     const yt = await Innertube.create();
     const result = await yt.music.search('Bohemian Rhapsody');
 
-    console.log('=== Testing correct title extraction ===\n');
+    console.log('=== Search Results ===\n');
 
     if (result.contents && result.contents.length > 0) {
       let songCount = 0;
@@ -33,14 +33,11 @@ import { Innertube } from 'youtubei.js';
               let videoId = '';
               if (item.endpoint?.watchEndpoint?.videoId) {
                 videoId = item.endpoint.watchEndpoint.videoId;
-              } else if (item.endpoint?.browseEndpoint?.browseId) {
-                // Skip non-video items (artists, albums)
-                continue;
               } else if (item.videoId) {
                 videoId = item.videoId;
               }
               
-              // Skip if no valid video ID (UC* = channel, MPREb* = album)
+              // Skip non-video items
               if (!videoId || videoId.startsWith('UC') || videoId.startsWith('MPREb')) {
                 continue;
               }
@@ -54,7 +51,6 @@ import { Innertube } from 'youtubei.js';
               } else if (item.flex_columns && item.flex_columns.length > 1) {
                 const secondCol = item.flex_columns[1];
                 if (secondCol?.title?.runs) {
-                  // Filter out non-text parts like "Song •" and "Album •"
                   artist = secondCol.title.runs
                     .filter(r => r.text && !r.bold)
                     .map(r => r.text)
@@ -75,7 +71,7 @@ import { Innertube } from 'youtubei.js';
                 duration = item.fixed_columns[0]?.text?.simpleText || '';
               }
 
-              // Only show actual songs (with valid videoId and title)
+              // Only show actual songs
               if (videoId && title) {
                 songCount++;
                 console.log(`${songCount}. "${title}" by ${artist} (${duration}) [ID: ${videoId}]`);
