@@ -1,8 +1,8 @@
-# 🎵 Muzo-backend
+# 🎵 Muzo-backend - Eclipse Music Addon
 
 <img src="icon.png" alt="Muzo-backend" width="320" height="320" align="center">
 
-A powerful Node.js/Express.js API that provides access to multiple music streaming services including YouTube Music, YouTube Search, Last.fm, Saavn, Piped, and Invidious. Perfect for building music applications, playlists, and discovery features.
+A powerful Node.js/Express.js API that provides access to YouTube Music with full **Eclipse Music Addon** compatibility. Search songs, albums, artists, playlists and stream music using Piped/Invidious proxies.
 
 **🌐 Backend BaseUrl:** [https://Muzo-backend.vercel.app](https://Muzo-backend.vercel.app)
 
@@ -13,15 +13,23 @@ A powerful Node.js/Express.js API that provides access to multiple music streami
 
 ## ✨ Features
 
+### Eclipse Addon Capabilities
+- 🔍 **Search** - Search dropdown integration for music discovery
+- ▶️ **Stream** - Resolves playable URLs for playback picker
+- 📚 **Catalog** - Full detail endpoints for albums, artists, and playlists
+- 🎵 **Types Supported** - track, album, artist, playlist
+
+### Music Sources
 - 🎵 **YouTube Music Integration** - Search songs, albums, artists, playlists
-- 🔍 **YouTube Search** - Search videos, channels, playlists with suggestions
-- 🎧 **Last.fm Integration** - Get similar tracks and music recommendations
-- 🎶 **Saavn API** - Search and stream music from JioSaavn
-- 📺 **Piped & Invidious** - Alternative YouTube streaming sources
-- 🎨 **Channel Feeds** - Get latest videos from YouTube channels
+- 📺 **Piped & Invidious** - Privacy-friendly YouTube streaming proxies
+- 🔄 **Smart Fallback** - Automatic failover across multiple instances
+- 🎶 **Multiple Formats** - MP3, AAC, M4A support via direct stream URLs
+
+### Developer Features
 - 📱 **RESTful API** - Clean, well-documented endpoints
 - 🔒 **CORS Support** - Cross-origin resource sharing enabled
 - 📊 **Comprehensive Logging** - Detailed request/response logging
+- ⚡ **Fast Response** - Optimized queries and parallel processing
 
 ## 🚀 Quick Start
 
@@ -41,13 +49,6 @@ npm start
 
 The API will be available at `http://localhost:5000`
 
-### 🌐 Frontend Demo
-
-Experience the API in action with our live frontend demo:
-- **Live Demo:** [https://Muzo-backend.vercel.app](https://Muzo-backend.vercel.app)
-- **Features:** Interactive API testing, real-time search, and streaming capabilities
-- **Source:** Built with modern web technologies showcasing all API endpoints
-
 ### Environment Variables (Optional)
 
 Create a `.env` file:
@@ -55,8 +56,52 @@ Create a `.env` file:
 ```env
 PORT=5000
 NODE_ENV=development
-LASTFM_API_KEY=your_lastfm_api_key
 ```
+
+## 📚 Eclipse Addon Integration
+
+### Installing the Addon in Eclipse
+
+1. Open Eclipse Music app
+2. Go to Settings → Addon Management
+3. Click "Install Addon"
+4. Enter your addon URL: `https://your-server.com/manifest.json`
+5. The addon will appear in your installed addons list
+
+### Addon Manifest
+
+The manifest endpoint (`/manifest.json`) returns:
+
+```json
+{
+  "id": "com.youtubemusic.addon",
+  "name": "YouTube Music Addon",
+  "version": "1.0.0",
+  "description": "Search and stream music from YouTube Music using Piped/Invidious",
+  "icon": "https://www.youtube.com/s/desktop/img/favicon_144x144.png",
+  "resources": ["search", "stream", "catalog"],
+  "types": ["track", "album", "artist", "playlist"],
+  "contentType": "music",
+  "baseUrl": "https://your-server.com"
+}
+```
+
+### Resources Explained
+
+| Resource | Description | Eclipse Feature |
+|----------|-------------|-----------------|
+| `search` | Your addon can search for music | Shows in search dropdown |
+| `stream` | Your addon can resolve playable URLs | Shows in playback picker |
+| `catalog` | Supports detail endpoints | Enables album/artist/playlist pages |
+
+### Types Supported
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `track` | Individual songs | Single tracks from search |
+| `album` | Albums/collections | Album detail pages |
+| `artist` | Artists | Artist profiles with top songs |
+| `playlist` | Curated playlists | Playlist track listings |
 
 ## 📚 API Documentation
 
@@ -70,260 +115,174 @@ http://localhost:5000
 GET /health
 ```
 
-## 🎵 Music Search & Discovery
+Response:
+```json
+{
+  "status": "ok"
+}
+```
 
-### 1. YouTube Music Search
-Search for songs, albums, artists, and playlists on YouTube Music.
+## 🎵 Eclipse Addon Endpoints
 
+### 1. Manifest (Required)
 ```http
-GET /api/search?q={query}&filter={type}&limit={number}
+GET /manifest.json
+```
+
+Returns addon metadata for Eclipse to discover capabilities.
+
+### 2. Search Endpoint
+```http
+GET /search?q={query}
 ```
 
 **Parameters:**
-- `q` (required): Search query
-- `filter` (optional): `songs`, `albums`, `artists`, `playlists`, `videos`
-- `limit` (optional): Number of results (default: 20)
+- `q` (required): Search query string
 
 **Example:**
 ```bash
-curl "http://localhost:5000/api/search?q=edm&filter=songs&limit=10"
+curl "http://localhost:5000/search?q=Bohemian%20Rhapsody"
+```
+
+**Response (Eclipse Format):**
+```json
+{
+  "tracks": [
+    {
+      "id": "fJ9rUzIMcZQ",
+      "videoId": "fJ9rUzIMcZQ",
+      "title": "Bohemian Rhapsody",
+      "artist": "Queen",
+      "album": "A Night at the Opera",
+      "duration": 354,
+      "artworkURL": "https://...",
+      "format": "mp3"
+    }
+  ],
+  "albums": [...],
+  "artists": [...],
+  "playlists": [...]
+}
+```
+
+### 3. Stream Endpoint
+```http
+GET /stream/{id}
+```
+
+**Parameters:**
+- `id` (required): Video ID from search results
+
+**Example:**
+```bash
+curl "http://localhost:5000/stream/fJ9rUzIMcZQ"
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "results": [
+  "url": "https://piped-instance.com/videoplayback?...",
+  "format": "mp3",
+  "quality": "128kbps"
+}
+```
+
+### 4. Album Details (Catalog)
+```http
+GET /album/{id}
+```
+
+**Example:**
+```bash
+curl "http://localhost:5000/album/MPREb_..."
+```
+
+**Response:**
+```json
+{
+  "id": "MPREb_...",
+  "title": "A Night at the Opera",
+  "artist": "Queen",
+  "year": "1975",
+  "trackCount": 12,
+  "artworkURL": "https://...",
+  "tracks": [
     {
-      "id": "dQw4w9WgXcQ",
-      "title": "Never Gonna Give You Up",
-      "artist": "Rick Astley",
-      "duration": "3:33",
-      "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-      "type": "song"
+      "id": "...",
+      "title": "Bohemian Rhapsody",
+      "duration": 354,
+      ...
     }
   ]
 }
 ```
 
-### 2. YouTube Search
-Search YouTube videos, channels, and playlists.
-
+### 5. Artist Details (Catalog)
 ```http
-GET /api/yt_search?q={query}&filter={type}&limit={number}
-```
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/yt_search?q=music&filter=videos&limit=5"
-```
-
-### 3. Search Suggestions
-Get search suggestions for autocomplete features.
-
-```http
-GET /api/search/suggestions?q={query}
-```
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/search/suggestions?q=edm"
-```
-
-## 🎧 Music Streaming
-
-### 1. Stream Music
-Get streaming URLs from multiple sources (Saavn, Piped, Invidious).
-
-```http
-GET /api/stream?id={videoId}&title={title}&artist={artist}
-```
-
-**Parameters:**
-- `id` (required): YouTube video ID
-- `title` (optional): Song title for Saavn matching
-- `artist` (optional): Artist name for Saavn matching
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/stream?id=dQw4w9WgXcQ&title=Never%20Gonna%20Give%20You%20Up&artist=Rick%20Astley"
+GET /artist/{id}
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "service": "saavn",
-  "instance": "saavn.dev",
-  "streamingUrls": [
-    {
-      "url": "https://...",
-      "quality": "320kbps",
-      "format": "mp3"
-    }
-  ],
-  "metadata": {
-    "title": "Never Gonna Give You Up",
-    "artist": "Rick Astley",
-    "duration": "3:33"
-  }
+  "id": "UCiMhD4jzUqG-IgPzUmmytRQ",
+  "name": "Queen",
+  "description": "British rock band...",
+  "artworkURL": "https://...",
+  "subscribers": "10M",
+  "topSongs": [...],
+  "albums": [...]
 }
 ```
 
-### 2. Similar Tracks
-Get similar tracks using Last.fm recommendations.
-
+### 6. Playlist Details (Catalog)
 ```http
-GET /api/similar?title={title}&artist={artist}&limit={number}
-```
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/similar?title=Shape%20of%20You&artist=Ed%20Sheeran&limit=5"
-```
-
-## 📺 Channel Feeds
-
-### 1. Authenticated Channel Feed
-Get latest videos from subscribed channels (requires auth token).
-
-```http
-GET /api/feed?authToken={token}&preview={boolean}
-```
-
-### 2. Unauthenticated Channel Feed
-Get latest videos from specified channels.
-
-```http
-GET /api/feed/unauthenticated?channels={channelIds}&preview={boolean}
-```
-
-**Parameters:**
-- `channels` (required): Comma-separated channel IDs
-- `preview` (optional): Limit to 5 videos per channel
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/feed/unauthenticated?channels=UCuAXFkgsw1L7xaCfnd5JJOw,UCBJycsmduvYEL83R_U4JriQ&preview=1"
-```
-
-### 3. Path-style Channel Feed
-Alternative endpoint format for channel feeds.
-
-```http
-GET /api/feed/channels={channelIds}?preview={boolean}
-```
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/feed/channels=UCuAXFkgsw1L7xaCfnd5JJOw,UCBJycsmduvYEL83R_U4JriQ?preview=1"
-```
-
-**Response:**
-```json
-[
-  {
-    "id": "dQw4w9WgXcQ",
-    "authorId": "UCuAXFkgsw1L7xaCfnd5JJOw",
-    "duration": "3:33",
-    "author": "Rick Astley",
-    "views": "1.2B",
-    "uploaded": "2009-10-25T06:57:33.000Z",
-    "title": "Never Gonna Give You Up"
-  }
-]
-```
-
-## 🎵 Album & Playlist Management
-
-### 1. Get Album Details
-Fetch detailed information about an album.
-
-```http
-GET /api/album/{albumId}
-```
-
-**Example:**
-```bash
-curl "http://localhost:5000/api/album/MPREb_qTDpBqltt6c"
+GET /playlist/{id}
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "album": {
-    "id": "MPREb_qTDpBqltt6c",
-    "playlistId": "OLAK5uy_mwBKAsTr40eAsSEDTgy6iiEoI2edmH9q8",
-    "title": "Releases for you",
-    "artist": "Nseeb",
-    "year": "2025",
-    "thumbnail": "https://lh3.googleusercontent.com/...",
-    "tracks": [
-      {
-        "id": "K9R7KcaettM",
-        "title": "I Really Do...",
-        "artist": "Nseeb",
-        "duration": "3:14",
-        "thumbnail": "https://i.ytimg.com/vi/K9R7KcaettM/hqdefault.jpg",
-        "videoId": "K9R7KcaettM"
-      }
-    ]
-  }
+  "id": "PLrEnWoR732-BHrPp_Pm8_VleD68f9s14-",
+  "title": "Best of Queen",
+  "creator": "YouTube Music",
+  "trackCount": 20,
+  "artworkURL": "https://...",
+  "tracks": [...]
 }
 ```
 
 ## 🔧 Advanced Features
 
-### 1. Dynamic Instance Management
-The API automatically fetches and caches streaming instances from remote sources:
-- **Piped Instances**: `https://raw.githubusercontent.com/n-ce/Uma/main/dynamic_instances.json`
-- **Invidious Instances**: Same source as Piped
-- **Saavn API**: Uses `saavn.dev` for reliable access
+### Offline Playback Support
+Tracks with `streamURL` (direct URLs) can be downloaded for offline listening. Users can:
+- Save individual tracks
+- Bulk-download entire playlists
+- Play offline without addon server connection
 
-### 2. Smart Content Filtering
-- **Shorts Detection**: Automatically filters out YouTube Shorts from feeds
-- **Duration Parsing**: Handles various duration formats (MM:SS, HH:MM:SS)
-- **Play Count Filtering**: Distinguishes between artist names and play counts
+### Default Playback Source
+If your manifest includes `"stream"` in resources, your addon appears in:
+**Settings → Addon Management → Default Playback**
 
-### 3. Robust Error Handling
-- **Service Fallbacks**: If one service fails, tries alternatives
-- **Timeout Management**: Configurable timeouts for all requests
-- **Retry Logic**: Automatic retries for failed requests
-- **Comprehensive Logging**: Detailed logs for debugging
+When selected, Eclipse searches your addon for songs played from Home, Radio, DJ, editorial playlists, etc.
 
-## 📊 Response Formats
-
-### Standard Success Response
-```json
-{
-  "success": true,
-  "data": [...],
-  "timestamp": "2025-10-16T04:52:24.045Z"
-}
+### Token-Based Authentication
+Support for authenticated addons:
 ```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "code": "ERROR_CODE"
-}
+https://my-addon.com/{user_token}/manifest.json
 ```
+Eclipse stores the full URL and automatically includes the token prefix in all subsequent calls.
 
-### Pagination Response
+### Audio Format Support
+Eclipse supports: MP3, AAC, M4A, FLAC, WAV, OGG
+- FLAC streams instantly via native FLAC streaming engine
+- Return format in stream response for optimal playback
+
+### Year Format Flexibility
+Both formats accepted:
 ```json
-{
-  "success": true,
-  "results": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "hasMore": true
-  }
-}
+{ "year": 2024 }  // Number
+{ "year": "2024" }  // String
 ```
 
 ## 🛠️ Development
@@ -331,21 +290,12 @@ The API automatically fetches and caches streaming instances from remote sources
 ### Project Structure
 ```
 Muzo-backend/
-├── js/                      # Main project directory
-│   ├── app.js              # Main Express application
-│   ├── api/
-│   │   └── app.js          # Vercel serverless entry point
-│   ├── lib/                # Custom libraries
-│   │   ├── ytmusicapi.js  # YouTube Music API
-│   │   ├── youtube-search.js # YouTube Search API
-│   │   ├── lastfm_api.js  # Last.fm integration
-│   │   └── get_youtube_song.js # YouTube song helper
-│   ├── routes/
-│   │   └── api.js          # Main API routes
-│   ├── vercel.json         # Vercel configuration
-│   ├── package.json        # Dependencies
-│   ├── icon.png           # Project icon
-│   └── README.md          # This file
+├── app.js              # Main Express application
+├── routes/
+│   └── api.js          # API routes (search, stream, catalog)
+├── package.json        # Dependencies
+├── icon.png           # Project icon
+└── README.md          # This file
 ```
 
 ### Available Scripts
@@ -355,14 +305,11 @@ npm run dev
 
 # Production
 npm start
-
-# Test
-npm test
 ```
 
 ### Dependencies
 - **Express.js**: Web framework
-- **Axios**: HTTP client
+- **youtubei.js**: YouTube Music API client
 - **CORS**: Cross-origin resource sharing
 - **Helmet**: Security middleware
 - **Morgan**: Logging middleware
@@ -373,30 +320,33 @@ npm test
 The API is configured for Vercel deployment:
 
 1. Connect your GitHub repository to Vercel
-2. The `vercel.json` configuration will handle the deployment
-3. Environment variables can be set in Vercel dashboard
+2. Set environment variables in Vercel dashboard
+3. Deploy - manifest fetches automatically on each request
 
-### Environment Variables for Vercel
-```env
-LASTFM_API_KEY=your_lastfm_api_key
-NODE_ENV=production
+### Self-Hosting
+```bash
+# Using Docker
+docker build -t muzo-backend .
+docker run -p 5000:5000 muzo-backend
+
+# Or directly with Node.js
+npm install
+npm start
 ```
 
 ## 🔒 Security Features
 
 - **CORS Configuration**: Properly configured for cross-origin requests
 - **Input Validation**: All inputs are validated and sanitized
-- **Rate Limiting**: Built-in rate limiting (configurable)
 - **Security Headers**: Helmet.js for security headers
 - **Error Handling**: No sensitive information in error responses
 
 ## 📈 Performance Optimizations
 
-- **Parallel Processing**: Multiple API calls run in parallel
-- **Caching**: Instance data is cached to reduce API calls
-- **Timeout Management**: Prevents hanging requests
-- **Efficient Parsing**: Optimized JSON parsing and data extraction
-- **Memory Management**: Proper cleanup of large responses
+- **Parallel Processing**: Multiple instance checks run in parallel
+- **Instance Caching**: Reduces redundant API calls
+- **Timeout Management**: Prevents hanging requests (5s per instance)
+- **Smart Fallback**: Tries multiple Piped/Invidious instances automatically
 
 ## 🤝 Contributing
 
@@ -413,32 +363,36 @@ MIT License - see LICENSE file for details.
 ## 🆘 Support
 
 For issues and questions:
-1. Check the existing issues on [GitHub](https://github.com/Shashwat-CODING/Muzo-backend/issues)
+1. Check existing issues on [GitHub](https://github.com/Shashwat-CODING/Muzo-backend/issues)
 2. Create a new issue with detailed description
 3. Include logs and request/response examples
-4. Visit our [live demo](https://shashwat-coding.github.io/Muzo-backend) to test the API
 
 ## 🔗 Links
 
 - **GitHub Repository:** [https://github.com/Shashwat-CODING/Muzo-backend](https://github.com/Shashwat-CODING/Muzo-backend)
 - **Live Demo:** [https://shashwat-coding.github.io/Muzo-backend](https://shashwat-coding.github.io/Muzo-backend)
-- **API Documentation:** Available in this README and through the live demo
+- **Eclipse Music:** [Download Eclipse](https://eclipse-music.app)
 
-## 🔄 Changelog
+## 📋 FAQ
 
-### v2.0.0
-- Added Last.fm integration
-- Added Saavn, Piped, and Invidious streaming
-- Added channel feed endpoints
-- Added album details endpoint
-- Improved error handling and logging
-- Added dynamic instance management
+**Can I build an addon in any language?**  
+Yes — any language that can serve HTTP with JSON responses works.
 
-### v1.0.0
-- Initial release with YouTube Music and YouTube Search
-- Basic search and suggestion functionality
-- RESTful API design
+**Does my addon need a database?**  
+No — your addon just needs to respond to HTTP requests.
+
+**Can my addon require authentication?**  
+Yes — include tokens in your addon URL. Eclipse stores the full URL.
+
+**What happens if my addon is offline?**  
+Eclipse falls back gracefully — tracks won't play, but the app works fine.
+
+**Can I update my addon without users reinstalling?**  
+Yes — just update your server. Eclipse fetches the manifest each time.
+
+**Can users save addon tracks offline?**  
+Yes — tracks with streamURL can be downloaded for offline listening.
 
 ---
 
-**Made with ❤️ by Shashwat for the Muzo community**
+**Made with ❤️ by Shashwat for the Muzo and Eclipse community**

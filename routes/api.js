@@ -4,7 +4,7 @@ const router = express.Router();
 
 /**
  * @swagger
- * /api/search:
+ * /search:
  *   get:
  *     summary: Search YouTube Music (Eclipse Addon format)
  *     parameters:
@@ -187,7 +187,273 @@ function parseDuration(durationText) {
 
 /**
  * @swagger
- * /api/stream/:id:
+ * /album/{id}:
+ *   get:
+ *     summary: Get album details (Eclipse Catalog endpoint)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Album browse ID
+ *     responses:
+ *       200:
+ *         description: Album details with tracks
+ */
+router.get('/album/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Missing required parameter: id' });
+    }
+
+    const youtubeMusic = req.app.locals.youtubeMusic;
+
+    if (!youtubeMusic) {
+      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+    }
+
+    // Get album details using youtubei.js
+    const albumInfo = await youtubeMusic.music.getAlbum(id);
+
+    if (!albumInfo) {
+      return res.status(404).json({ error: 'Album not found' });
+    }
+
+    // Extract album metadata
+    const title = albumInfo.title?.text || albumInfo.title || '';
+    const artist = albumInfo.artists?.map(a => a.name).join(', ') || '';
+    const year = albumInfo.year?.text || albumInfo.year || '';
+    const trackCount = albumInfo.trackCount || 0;
+    const thumbnail = albumInfo.thumbnail?.url || albumInfo.thumbnails?.[0]?.url || '';
+
+    // Extract tracks
+    const tracks = [];
+    if (albumInfo.tracks && Array.isArray(albumInfo.tracks)) {
+      for (const track of albumInfo.tracks) {
+        const videoId = track.videoId || track.id || '';
+        const trackTitle = track.title?.text || track.title || '';
+        const durationText = track.duration?.text || track.duration || '';
+        const durationSeconds = parseDuration(durationText);
+
+        if (videoId && trackTitle) {
+          tracks.push({
+            id: videoId,
+            videoId: videoId,
+            title: trackTitle,
+            artist: track.artists?.map(a => a.name).join(', ') || artist,
+            album: title,
+            duration: durationSeconds,
+            artworkURL: thumbnail,
+            format: 'mp3',
+            trackNumber: track.trackNumber || tracks.length + 1
+          });
+        }
+      }
+    }
+
+    res.json({
+      id: id,
+      title: title,
+      artist: artist,
+      year: year,
+      trackCount: tracks.length,
+      artworkURL: thumbnail,
+      tracks: tracks
+    });
+  } catch (error) {
+    console.error('Album endpoint error:', error);
+    res.status(500).json({ error: `Album fetch failed: ${error.message}` });
+  }
+});
+
+/**
+ * @swagger
+ * /artist/{id}:
+ *   get:
+ *     summary: Get artist details (Eclipse Catalog endpoint)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Artist browse ID
+ *     responses:
+ *       200:
+ *         description: Artist details with top songs and albums
+ */
+router.get('/artist/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Missing required parameter: id' });
+    }
+
+    const youtubeMusic = req.app.locals.youtubeMusic;
+
+    if (!youtubeMusic) {
+      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+    }
+
+    // Get artist details using youtubei.js
+    const artistInfo = await youtubeMusic.music.getArtist(id);
+
+    if (!artistInfo) {
+      return res.status(404).json({ error: 'Artist not found' });
+    }
+
+    // Extract artist metadata
+    const name = artistInfo.name?.text || artistInfo.name || '';
+    const description = artistInfo.description?.text || artistInfo.description || '';
+    const thumbnail = artistInfo.thumbnail?.url || artistInfo.thumbnails?.[0]?.url || '';
+    const subscribers = artistInfo.subscribers?.text || '';
+
+    // Extract top songs
+    const topSongs = [];
+    if (artistInfo.songs && Array.isArray(artistInfo.songs)) {
+      for (const song of artistInfo.songs.slice(0, 20)) {
+        const videoId = song.videoId || song.id || '';
+        const title = song.title?.text || song.title || '';
+        const durationText = song.duration?.text || song.duration || '';
+        const durationSeconds = parseDuration(durationText);
+
+        if (videoId && title) {
+          topSongs.push({
+            id: videoId,
+            videoId: videoId,
+            title: title,
+            artist: name,
+            duration: durationSeconds,
+            artworkURL: thumbnail,
+            format: 'mp3'
+          });
+        }
+      }
+    }
+
+    // Extract albums
+    const albums = [];
+    if (artistInfo.albums && Array.isArray(artistInfo.albums)) {
+      for (const album of artistInfo.albums) {
+        const browseId = album.browseId || album.id || '';
+        const albumTitle = album.title?.text || album.title || '';
+        const albumYear = album.year?.text || album.year || '';
+
+        if (browseId && albumTitle) {
+          albums.push({
+            id: browseId,
+            title: albumTitle,
+            artist: name,
+            year: albumYear,
+            artworkURL: album.thumbnail?.url || album.thumbnails?.[0]?.url || ''
+          });
+        }
+      }
+    }
+
+    res.json({
+      id: id,
+      name: name,
+      description: description,
+      artworkURL: thumbnail,
+      subscribers: subscribers,
+      topSongs: topSongs,
+      albums: albums
+    });
+  } catch (error) {
+    console.error('Artist endpoint error:', error);
+    res.status(500).json({ error: `Artist fetch failed: ${error.message}` });
+  }
+});
+
+/**
+ * @swagger
+ * /playlist/{id}:
+ *   get:
+ *     summary: Get playlist details (Eclipse Catalog endpoint)
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Playlist browse ID
+ *     responses:
+ *       200:
+ *         description: Playlist details with tracks
+ */
+router.get('/playlist/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Missing required parameter: id' });
+    }
+
+    const youtubeMusic = req.app.locals.youtubeMusic;
+
+    if (!youtubeMusic) {
+      return res.status(503).json({ error: 'YouTube Music client not initialized' });
+    }
+
+    // Get playlist details using youtubei.js
+    const playlistInfo = await youtubeMusic.music.getPlaylist(id);
+
+    if (!playlistInfo) {
+      return res.status(404).json({ error: 'Playlist not found' });
+    }
+
+    // Extract playlist metadata
+    const title = playlistInfo.title?.text || playlistInfo.title || '';
+    const author = playlistInfo.author?.name || playlistInfo.author || '';
+    const trackCount = playlistInfo.trackCount || 0;
+    const thumbnail = playlistInfo.thumbnail?.url || playlistInfo.thumbnails?.[0]?.url || '';
+
+    // Extract tracks
+    const tracks = [];
+    if (playlistInfo.tracks && Array.isArray(playlistInfo.tracks)) {
+      for (const track of playlistInfo.tracks) {
+        const videoId = track.videoId || track.id || '';
+        const trackTitle = track.title?.text || track.title || '';
+        const durationText = track.duration?.text || track.duration || '';
+        const durationSeconds = parseDuration(durationText);
+
+        if (videoId && trackTitle) {
+          tracks.push({
+            id: videoId,
+            videoId: videoId,
+            title: trackTitle,
+            artist: track.artists?.map(a => a.name).join(', ') || '',
+            album: track.album?.name || '',
+            duration: durationSeconds,
+            artworkURL: track.thumbnail?.url || thumbnail,
+            format: 'mp3'
+          });
+        }
+      }
+    }
+
+    res.json({
+      id: id,
+      title: title,
+      creator: author,
+      trackCount: tracks.length,
+      artworkURL: thumbnail,
+      tracks: tracks
+    });
+  } catch (error) {
+    console.error('Playlist endpoint error:', error);
+    res.status(500).json({ error: `Playlist fetch failed: ${error.message}` });
+  }
+});
+
+/**
+ * @swagger
+ * /stream/:id:
  *   get:
  *     summary: Get streaming data for a video using Piped/Invidious (Eclipse Addon format)
  *     parameters:
