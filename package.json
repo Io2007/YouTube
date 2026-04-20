@@ -1,6 +1,7 @@
 {
   "name": "youtube-music-api",
   "version": "1.0.0",
+  "type": "module",
   "description": "YouTube Music API for search and stream using youtubei.js",
   "main": "app.js",
   "scripts": {
