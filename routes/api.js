@@ -102,9 +102,17 @@ router.get('/search', async (req, res) => {
             album = item.flex_columns[2]?.text?.runs?.map(r => r.text).join(', ') || '';
           }
           
+          // Extract ISRC if available
+          let isrc = '';
+          if (item.isrc) {
+            isrc = item.isrc;
+          } else if (item.videoDetails?.isrc) {
+            isrc = item.videoDetails.isrc;
+          }
+          
           // Only add if we have at least a videoId and title
           if (videoId && title) {
-            tracks.push({
+            const trackObj = {
               id: videoId,
               videoId: videoId,
               title: title,
@@ -113,7 +121,11 @@ router.get('/search', async (req, res) => {
               duration: durationSeconds,
               artworkURL: thumbnail,
               format: 'mp3'
-            });
+            };
+            if (isrc) {
+              trackObj.isrc = isrc;
+            }
+            tracks.push(trackObj);
           }
         }
         // Check for Album type
@@ -238,8 +250,16 @@ router.get('/album/:id', async (req, res) => {
         const durationText = track.duration?.text || track.duration || '';
         const durationSeconds = parseDuration(durationText);
 
+        // Extract ISRC if available
+        let isrc = '';
+        if (track.isrc) {
+          isrc = track.isrc;
+        } else if (track.videoDetails?.isrc) {
+          isrc = track.videoDetails.isrc;
+        }
+
         if (videoId && trackTitle) {
-          tracks.push({
+          const trackObj = {
             id: videoId,
             videoId: videoId,
             title: trackTitle,
@@ -249,7 +269,11 @@ router.get('/album/:id', async (req, res) => {
             artworkURL: thumbnail,
             format: 'mp3',
             trackNumber: track.trackNumber || tracks.length + 1
-          });
+          };
+          if (isrc) {
+            trackObj.isrc = isrc;
+          }
+          tracks.push(trackObj);
         }
       }
     }
@@ -422,8 +446,16 @@ router.get('/playlist/:id', async (req, res) => {
         const durationText = track.duration?.text || track.duration || '';
         const durationSeconds = parseDuration(durationText);
 
+        // Extract ISRC if available
+        let isrc = '';
+        if (track.isrc) {
+          isrc = track.isrc;
+        } else if (track.videoDetails?.isrc) {
+          isrc = track.videoDetails.isrc;
+        }
+
         if (videoId && trackTitle) {
-          tracks.push({
+          const trackObj = {
             id: videoId,
             videoId: videoId,
             title: trackTitle,
@@ -432,7 +464,11 @@ router.get('/playlist/:id', async (req, res) => {
             duration: durationSeconds,
             artworkURL: track.thumbnail?.url || thumbnail,
             format: 'mp3'
-          });
+          };
+          if (isrc) {
+            trackObj.isrc = isrc;
+          }
+          tracks.push(trackObj);
         }
       }
     }
