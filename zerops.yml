@@ -1,0 +1,14 @@
+zerops:
+  - setup: docker
+    run:
+      base: docker@26.1
+      # download and cache docker image
+      prepareCommands:
+        - docker image pull ghcr.io/shashwat-coding/effective-palm-tree:main@sha256:757909320598ee6aa57fdf717cdcdd50e80b5c9a3462b055fe08ea9f80b1aa6a
+      # start docker, --network=host needed
+      start: docker run --network=host ghcr.io/shashwat-coding/effective-palm-tree:main@sha256:757909320598ee6aa57fdf717cdcdd50e80b5c9a3462b055fe08ea9f80b1aa6a
+      # what ports docker exposes
+      # and whether it supports http traffic
+      ports:
+        - port: 7860
+          httpSupport: true
