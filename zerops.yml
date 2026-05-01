@@ -4,9 +4,9 @@ zerops:
       base: docker@26.1
       # download and cache docker image
       prepareCommands:
-        - docker image pull ghcr.io/shashwat-coding/effective-palm-tree:main@sha256:2ea3b0763fd191e7ec4fadb03b58e3cf6bd868bd4c597c738b14c7b6fb207099
+        - docker image pull ghcr.io/shashwat-coding/effective-palm-tree:main@sha256:74f9632507214c110a3cdb49e7139a996061de80b728a17c220baca81a9513ba
       # start docker, --network=host needed
-      start: docker run --network=host ghcr.io/shashwat-coding/effective-palm-tree:main@sha256:2ea3b0763fd191e7ec4fadb03b58e3cf6bd868bd4c597c738b14c7b6fb207099
+      start: docker run --network=host ghcr.io/shashwat-coding/effective-palm-tree:main@sha256:74f9632507214c110a3cdb49e7139a996061de80b728a17c220baca81a9513ba
       # what ports docker exposes
       # and whether it supports http traffic
       ports:
